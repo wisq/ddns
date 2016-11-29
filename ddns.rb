@@ -7,6 +7,8 @@ require 'timeout'
 require 'net/http'
 require 'uri'
 
+$stdout.sync = $stderr.sync = true
+
 USAGE = <<"EOF"
 Usage: #{$0} <interface> <domain> <record>,
    interface = internet-facing local interface (e.g. "eth0"),

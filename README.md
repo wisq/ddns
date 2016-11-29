@@ -26,4 +26,14 @@ When run, the script composes a list of local IP addresses, based on
 * a remote IP-reporting service (http://icanhazip.com/)
   * more correct, but more possibility of failure
 
-It then updates DNSimple "A" records (only if needed) to this list of IP addresses.
+It then updates DNSimple `A` records (only if needed) to this list of IP addresses.
+
+### What if … ?
+
+If either method fails, it will insert any new addresses it finds, but refrain from deleting any extra records it doesn't expect.
+
+This serves two purposes:
+
+* Avoids unnecessary updates if one of the methods has a temporary failure
+* Helps ensure that the DNS record is as comprehensive as possible
+  * At least one of the `A` records should be correct, even if the others are not

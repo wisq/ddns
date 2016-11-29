@@ -28,6 +28,7 @@ class DDNS
   def initialize(oauth_v2_token)
     @client = Dnsimple::Client.new(access_token: oauth_v2_token)
     @account_id = @client.identity.whoami.data.account.id
+    @failsafe = false
   end
 
   def get_addrs_local(iface)
@@ -54,13 +55,16 @@ class DDNS
       addrs += get_addrs_local(iface)
     rescue StandardError => e
       puts "Failed to get local address(es): #{e.inspect}"
+      @failsafe = true
     end
     begin
       addrs << get_addr_remote
     rescue StandardError => e
       puts "Failed to get remote address: #{e.inspect}"
+      @failsafe = true
     end
     puts "Current IP addresses: #{addrs.to_a.inspect}"
+    puts "FAILSAFE MODE ENABLED: At least one IP fetching approach failed." if @failsafe
     return addrs
   end
 
@@ -86,8 +90,12 @@ class DDNS
     end
 
     to_delete.each do |ip, rec_id|
-      puts "Deleting record for #{ip.inspect}."
-      @client.zones.delete_record(@account_id, domain, rec_id)
+      if @failsafe
+        puts "FAILSAFE MODE: Refusing to delete record for #{ip.inspect}."
+      else
+        puts "Deleting record for #{ip.inspect}."
+        @client.zones.delete_record(@account_id, domain, rec_id)
+      end
     end
 
     to_create.each do |ip|

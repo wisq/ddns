@@ -45,7 +45,13 @@ class DDNS
 
   def get_addr_remote
     Timeout.timeout(10) do
-      return Net::HTTP.get(URI.parse('http://icanhazip.com/')).chomp
+      ip = Net::HTTP.get(URI.parse('http://icanhazip.com/')).chomp
+      quads = ip.split('.', 5)
+      unless quads.count == 4 && quads.all? { |q| q =~ /\A\d+\z/ }
+        result = if ip.length > 50 then ip[0,50] + "..." else ip end
+        raise "Remote IP doesn't look like an IP: #{result.inspect}"
+      end
+      return ip
     end
   end
 

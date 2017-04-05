@@ -15,20 +15,30 @@ Usage: #{$0} <interface> <domain> <record>,
    domain    = DNSimple domain (e.g. "example.com"),
    record    = DNSimple record (e.g. "myip" = "myip.example.com"),
 
-Don't forget to set the environment variable "OAUTH_V2_TOKEN"
-to your generated OAuth token, which must be specific to the account
-that owns <domain>.
+Don't forget to set one of the following environment variables:
+
+  * "DOMAIN_TOKEN" (recommended, default) -- generated domain token,
+    which must be specific to <domain> itself.
+  * "OAUTH_V2_TOKEN" -- generated OAuth token, which must be
+    specific to the account that owns <domain>.
 EOF
 
 def main(iface, domain, record)
-  ddns = DDNS.new(ENV.fetch('OAUTH_V2_TOKEN'))
+  ddns = nil
+  if token = ENV['DOMAIN_TOKEN']
+    ddns = DDNS.new(domain_api_token: token)
+  elsif token = ENV['OAUTH_V2_TOKEN']
+    ddns = DDNS.new(access_token: token)
+  else
+    raise "Must set one of DOMAIN_TOKEN or OAUTH_V2_TOKEN in environment."
+  end
   ipaddrs = ddns.get_addrs(iface)
   ddns.dns_set(record, domain, ipaddrs)
 end
 
 class DDNS
-  def initialize(oauth_v2_token)
-    @client = Dnsimple::Client.new(access_token: oauth_v2_token)
+  def initialize(credentials)
+    @client = Dnsimple::Client.new(credentials)
     @account_id = @client.identity.whoami.data.account.id
     @failsafe = false
   end
